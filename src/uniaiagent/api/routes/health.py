@@ -3,8 +3,20 @@
 from fastapi import APIRouter
 
 from uniaiagent.core import perform_health_check
+from uniaiagent.core.health_checker import get_version
 
 router = APIRouter()
+
+
+@router.get("/")
+async def root():
+    """Root endpoint returning basic application information."""
+    version = await get_version()
+    return {
+        "name": "Unified AI Agent",
+        "version": version,
+        "status": "running",
+    }
 
 
 @router.get("/health")

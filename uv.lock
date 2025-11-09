@@ -288,7 +288,7 @@ wheels = [
 ]
 
 [[package]]
-name = "claude-code-proxy"
+name = "unified-ai-agent"
 version = "0.7.1"
 source = { editable = "." }
 dependencies = [

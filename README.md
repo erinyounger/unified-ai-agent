@@ -1,6 +1,4 @@
-# Claude Code Proxy - Python 版本
-
-这是 Claude Code Proxy 的 Python 3.11 重构版本，提供与 TypeScript 版本完全对等的功能。
+# Unified AI Agent
 
 ## 功能特性
 

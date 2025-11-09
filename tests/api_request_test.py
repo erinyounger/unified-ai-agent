@@ -576,7 +576,7 @@ def wait_for_server_cleanup(wait_seconds: int = 3):
 def main():
     """主测试函数。"""
     print("=" * 80)
-    print("  Claude Code Proxy API 完整测试")
+    print("  Unified AI Agent API 完整测试")
     print("=" * 80)
     print(f"测试服务器: {BASE_URL}")
     print(f"API Key: {API_KEY}")
