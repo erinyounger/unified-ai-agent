@@ -1,5 +1,5 @@
 [project]
-name = "UniAiAgent"
+name = "UniAIAgent"
 version = "0.0.1"
 description = "HTTP proxy server for Claude Code CLI with OpenAI API compatibility"
 authors = [{name = "Your Name", email = "your.email@example.com"}]
@@ -37,7 +37,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.poetry]
-name = "UniAiAgent"
+name = "UniAIAgent"
 version = "0.7.1"
 description = "HTTP proxy server for Claude Code CLI with OpenAI API compatibility"
 authors = ["Your Name <your.email@example.com>"]
