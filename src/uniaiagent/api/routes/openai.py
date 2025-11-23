@@ -67,6 +67,8 @@ async def stream_openai_response(
             dangerously_skip_permissions=session_info.get("dangerously_skip_permissions"),
             allowed_tools=session_info.get("allowed_tools"),
             disallowed_tools=session_info.get("disallowed_tools"),
+            skills=session_info.get("skills"),
+            skill_options=session_info.get("skill_options"),
         )
 
         # Stream Claude response and process through stream processor

@@ -1,4 +1,4 @@
-# Unified AI Agent
+# UniAIAgent
 
 ## 功能特性
 
@@ -9,6 +9,7 @@
 - ✅ **工作区管理**: 隔离的工作区，支持自定义命名
 - ✅ **系统提示**: 支持自定义系统提示
 - ✅ **MCP 支持**: Model Context Protocol 集成
+- ✅ **Skill 扩展**: 通过 `skills` 与 `skill-options` 启用 Claude Code 自定义技能
 - ✅ **会话管理**: 恢复 Claude Code 会话
 - ✅ **OpenAI API 兼容**: 完全兼容 OpenAI chat completions API
 - ✅ **权限控制**: 细粒度的工具权限管理
@@ -93,6 +94,42 @@ uvicorn src.main:app --host 0.0.0.0 --port 3000
 ## API 接口文档
 
 所有 API 端点都支持 Bearer Token 认证（通过 `Authorization` 请求头）。如果未设置 `API_KEY` 环境变量，认证将被禁用。
+
+## Skills 使用指南
+
+### OpenAI 兼容端点
+
+在最后一条 user/assistant 消息或系统提示中嵌入配置即可：
+
+```
+workspace=repo-alpha
+skills=["repo_map","test_runner"]
+skill-options={"test_runner":{"timeout":120}}
+thinking=true
+
+请为当前仓库生成依赖图，并运行测试套件。
+```
+
+- `skills`：启用的技能名数组，会在 CLI 中转成 `--skills repo_map,test_runner`。
+- `skill-options`：JSON 对象，直接传给 `--skillOptions`，可针对每个技能下发参数。
+
+### 原生 `/api/claude` 端点
+
+直接在请求体中发送字段：
+
+```json
+{
+  "prompt": "请运行 repo_map 并总结输出",
+  "skills": ["repo_map"],
+  "skill-options": {
+    "repo_map": {
+      "maxDepth": 4
+    }
+  }
+}
+```
+
+> Tips：`skills` 与 `skill-options` 可与 `allowed-tools`、`workspace`、`session-id` 等参数混用，OpenAI SSE 流会在 thinking 区块中回显当前激活的技能及其配置，方便排障。
 
 ### 1. 健康检查端点
 

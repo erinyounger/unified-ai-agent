@@ -1,6 +1,7 @@
 """Claude CLI process execution and management."""
 
 import asyncio
+import json
 import platform
 from pathlib import Path
 from typing import AsyncIterator, Optional
@@ -108,6 +109,12 @@ class ClaudeExecutor:
 
             if options.disallowed_tools and len(options.disallowed_tools) > 0:
                 args.extend(["--disallowedTools", ",".join(options.disallowed_tools)])
+
+            if options.skills and len(options.skills) > 0:
+                args.extend(["--skills", ",".join(options.skills)])
+
+            if options.skill_options:
+                args.extend(["--skillOptions", json.dumps(options.skill_options)])
 
         return args
 
