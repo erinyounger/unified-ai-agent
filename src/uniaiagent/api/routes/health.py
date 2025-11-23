@@ -13,7 +13,7 @@ async def root():
     """Root endpoint returning basic application information."""
     version = await get_version()
     return {
-        "name": "Unified AI Agent",
+        "name": "UniAiAgent",
         "version": version,
         "status": "running",
     }

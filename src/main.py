@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
             "enabled": auth_status["enabled"],
             "keyCount": auth_status["keyCount"],
         },
-        msg="Starting Unified AI Agent Server",
+        msg="Starting UniAiAgent Server",
     )
 
     if auth_status["enabled"]:
@@ -56,14 +56,14 @@ async def lifespan(app: FastAPI):
     # Shutdown
     server_logger.info(
         type="server_shutdown",
-        msg="Shutting down Unified AI Agent Server",
+        msg="Shutting down UniAiAgent Server",
     )
     executor.cleanup_active_processes()
 
 
 # Create FastAPI app
 app = FastAPI(
-    title="Unified AI Agent",
+    title="UniAiAgent",
     version="0.7.1",
     description="HTTP proxy server for Claude Code CLI with OpenAI API compatibility",
     lifespan=lifespan,
