@@ -13,6 +13,8 @@ class ClaudeOptions(BaseModel):
     dangerously_skip_permissions: Optional[bool] = Field(None, alias="dangerously-skip-permissions")
     allowed_tools: Optional[list[str]] = Field(None, alias="allowed-tools")
     disallowed_tools: Optional[list[str]] = Field(None, alias="disallowed-tools")
+    skills: Optional[list[str]] = Field(None, alias="skills")
+    skill_options: Optional[dict[str, Any]] = Field(None, alias="skill-options")
 
     class Config:
         """Pydantic config."""
@@ -30,6 +32,8 @@ class ClaudeApiRequest(BaseModel):
     dangerously_skip_permissions: Optional[bool] = Field(None, alias="dangerously-skip-permissions")
     allowed_tools: Optional[list[str]] = Field(None, alias="allowed-tools")
     disallowed_tools: Optional[list[str]] = Field(None, alias="disallowed-tools")
+    skills: Optional[list[str]] = Field(None, alias="skills")
+    skill_options: Optional[dict[str, Any]] = Field(None, alias="skill-options")
     files: Optional[list[str]] = None
 
     class Config:
@@ -73,6 +77,8 @@ class SessionInfo(BaseModel):
     allowed_tools: Optional[list[str]] = None
     disallowed_tools: Optional[list[str]] = None
     show_thinking: Optional[bool] = None
+    skills: Optional[list[str]] = None
+    skill_options: Optional[dict[str, Any]] = None
 
 
 # Content block types based on Anthropic SDK

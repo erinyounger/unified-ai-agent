@@ -1,6 +1,7 @@
 """OpenAI to Claude API transformation utilities."""
 
 import base64
+import json
 import re
 import uuid
 from pathlib import Path
@@ -22,49 +23,74 @@ class OpenAITransformer:
 
         # Start from the end and work backwards to find the most recent assistant message
         for i in range(len(messages) - 2, -1, -1):
-            if messages[i].role == "assistant":
-                message_content = messages[i].content
-                if not isinstance(message_content, str):
-                    continue  # Skip non-string content
+            if messages[i].role != "assistant":
+                continue
 
-                content = message_content
+            message_content = messages[i].content
+            if not isinstance(message_content, str):
+                continue  # Skip non-string content
 
-                session_match = re.search(r"(?:^|\s)session-id=([a-f0-9-]+)", content, re.MULTILINE)
-                if session_match:
-                    result["session_id"] = session_match.group(1)
-                    found_session = True
+            content = message_content
 
-                workspace_match = re.search(r"(?:^|\s)workspace=([^\s\n]+)", content, re.MULTILINE)
-                if workspace_match:
-                    result["workspace"] = workspace_match.group(1)
+            session_match = re.search(r"(?:^|\s)session-id=([a-f0-9-]+)", content, re.MULTILINE)
+            if session_match:
+                result["session_id"] = session_match.group(1)
+                found_session = True
 
-                danger_match = re.search(r"(?:^|\s)dangerously-skip-permissions=(\w+)", content, re.MULTILINE)
-                if danger_match:
-                    result["dangerously_skip_permissions"] = danger_match.group(1).lower() == "true"
+            workspace_match = re.search(r"(?:^|\s)workspace=([^\s\n]+)", content, re.MULTILINE)
+            if workspace_match:
+                result["workspace"] = workspace_match.group(1)
 
-                allowed_match = re.search(r"(?:^|\s)allowed-tools=\[([^\]]*)\]", content, re.MULTILINE)
-                if allowed_match:
-                    match_content = allowed_match.group(1).strip()
-                    if match_content:
-                        result["allowed_tools"] = [
-                            tool.strip().strip('"\'') for tool in match_content.split(",") if tool.strip()
-                        ]
-                    else:
-                        result["allowed_tools"] = []
+            danger_match = re.search(r"(?:^|\s)dangerously-skip-permissions=(\w+)", content, re.MULTILINE)
+            if danger_match:
+                result["dangerously_skip_permissions"] = danger_match.group(1).lower() == "true"
 
-                disallowed_match = re.search(r"(?:^|\s)disallowed-tools=\[([^\]]*)\]", content, re.MULTILINE)
-                if disallowed_match:
-                    match_content = disallowed_match.group(1).strip()
-                    if match_content:
-                        result["disallowed_tools"] = [
-                            tool.strip().strip('"\'') for tool in match_content.split(",") if tool.strip()
-                        ]
-                    else:
-                        result["disallowed_tools"] = []
+            allowed_match = re.search(r"(?:^|\s)allowed-tools=\[([^\]]*)\]", content, re.MULTILINE)
+            if allowed_match:
+                match_content = allowed_match.group(1).strip()
+                result["allowed_tools"] = (
+                    [
+                        tool.strip().strip('"\'')
+                        for tool in match_content.split(",")
+                        if tool.strip()
+                    ]
+                    if match_content
+                    else []
+                )
 
-                # Stop at the first assistant message with session info
-                if found_session:
-                    break
+            disallowed_match = re.search(r"(?:^|\s)disallowed-tools=\[([^\]]*)\]", content, re.MULTILINE)
+            if disallowed_match:
+                match_content = disallowed_match.group(1).strip()
+                result["disallowed_tools"] = (
+                    [
+                        tool.strip().strip('"\'')
+                        for tool in match_content.split(",")
+                        if tool.strip()
+                    ]
+                    if match_content
+                    else []
+                )
+
+            skills_match = re.search(r"(?:^|\s)skills=\[([^\]]*)\]", content, re.MULTILINE)
+            if skills_match:
+                match_content = skills_match.group(1).strip()
+                result["skills"] = (
+                    [
+                        skill.strip().strip('"\'')
+                        for skill in match_content.split(",")
+                        if skill.strip()
+                    ]
+                    if match_content
+                    else []
+                )
+
+            skill_options = OpenAITransformer._parse_skill_options(content)
+            if skill_options is not None:
+                result["skill_options"] = skill_options
+
+            # Stop at the first assistant message with session info
+            if found_session:
+                break
 
         return SessionInfo(**result) if found_session else None
 
@@ -97,6 +123,18 @@ class OpenAITransformer:
             else:
                 config["disallowed_tools"] = []
 
+        skills_match = re.search(r"(?:^|\s)skills=\[([^\]]*)\]", user_message, re.MULTILINE)
+        if skills_match:
+            content = skills_match.group(1).strip()
+            if content:
+                config["skills"] = [skill.strip().strip('"\'') for skill in content.split(",") if skill.strip()]
+            else:
+                config["skills"] = []
+
+        skill_options = OpenAITransformer._parse_skill_options(user_message)
+        if skill_options is not None:
+            config["skill_options"] = skill_options
+
         thinking_match = re.search(r"(?:^|\s)thinking=(\w+)", user_message, re.MULTILINE)
         if thinking_match:
             config["show_thinking"] = thinking_match.group(1).lower() == "true"
@@ -112,6 +150,8 @@ class OpenAITransformer:
             cleaned_prompt = re.sub(r"(?:^|\s)allowed-tools=\[[^\]]*\]", "", cleaned_prompt, flags=re.MULTILINE)
             cleaned_prompt = re.sub(r"(?:^|\s)disallowed-tools=\[[^\]]*\]", "", cleaned_prompt, flags=re.MULTILINE)
             cleaned_prompt = re.sub(r"(?:^|\s)thinking=\w+", "", cleaned_prompt, flags=re.MULTILINE)
+            cleaned_prompt = re.sub(r"(?:^|\s)skills=\[[^\]]*\]", "", cleaned_prompt, flags=re.MULTILINE)
+            cleaned_prompt = OpenAITransformer._strip_skill_options(cleaned_prompt)
             cleaned_prompt = re.sub(r'(?:^|\s)prompt="[^"]+"', "", cleaned_prompt, flags=re.MULTILINE)
             cleaned_prompt = re.sub(r"(?:^|\s)prompt=", "", cleaned_prompt, flags=re.MULTILINE)
             cleaned_prompt = re.sub(r"\s+", " ", cleaned_prompt).strip()
@@ -286,8 +326,67 @@ class OpenAITransformer:
             info += f"disallowed-tools=[{tools_str}]\n"
         if session_info.get("show_thinking") is not None:
             info += f"thinking={session_info['show_thinking']}\n"
+        if session_info.get("skills"):
+            skills_str = ",".join(f'"{skill}"' for skill in session_info["skills"])
+            info += f"skills=[{skills_str}]\n"
+        if session_info.get("skill_options"):
+            info += f"skill-options={json.dumps(session_info['skill_options'])}\n"
 
         return info
+
+    @staticmethod
+    def _parse_skill_options(source: str) -> dict[str, Any] | None:
+        """Parse skill options JSON block from text."""
+        bounds = OpenAITransformer._find_skill_options_bounds(source)
+        if not bounds:
+            return None
+
+        _, brace_start, end_index = bounds
+        json_block = source[brace_start:end_index]
+
+        try:
+            return json.loads(json_block)
+        except json.JSONDecodeError as error:
+            server_logger.warn(
+                type="skill_options_parse_error",
+                error=str(error),
+                snippet=json_block[:1000],
+                msg="Failed to parse skill-options JSON block",
+            )
+            return None
+
+    @staticmethod
+    def _strip_skill_options(text: str) -> str:
+        """Remove skill-options block from raw text."""
+        bounds = OpenAITransformer._find_skill_options_bounds(text)
+        if not bounds:
+            return text
+
+        start_index, _, end_index = bounds
+        return text[:start_index] + text[end_index:]
+
+    @staticmethod
+    def _find_skill_options_bounds(source: str) -> tuple[int, int, int] | None:
+        """Locate the start, brace start, and end of a skill-options block."""
+        match = re.search(r"(?:^|\s)skill-options\s*=", source, re.MULTILINE)
+        if not match:
+            return None
+
+        brace_index = source.find("{", match.end())
+        if brace_index == -1:
+            return None
+
+        depth = 0
+        for idx in range(brace_index, len(source)):
+            char = source[idx]
+            if char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return match.start(), brace_index, idx + 1
+
+        return None
 
     @staticmethod
     def create_chunk(

@@ -60,6 +60,8 @@ async def stream_claude_response(
             dangerously_skip_permissions=request.dangerously_skip_permissions,
             allowed_tools=request.allowed_tools,
             disallowed_tools=request.disallowed_tools,
+            skills=request.skills,
+            skill_options=request.skill_options,
         )
 
         # Stream Claude response
